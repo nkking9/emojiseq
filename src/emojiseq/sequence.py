@@ -135,6 +135,59 @@ def analyze(text: str) -> SequenceAnalysis:
     )
 
 
+def split_clusters(text: str) -> list[str]:
+    """Split `text` into individual emoji clusters.
+
+    `unicodedata` has no notion of grapheme-cluster boundaries, so this
+    walks the codepoints itself using the same role classification as
+    `analyze`: a ZWJ glues the base before and after it into one cluster,
+    a regional indicator pairs with a lone preceding one to close a flag,
+    and variation selectors / skin tones / tag characters / the keycap
+    combiner always attach to whatever cluster precedes them. Anything
+    else starts a new cluster.
+    """
+    clusters: list[str] = []
+    current: list[str] = []
+
+    def flush() -> None:
+        if current:
+            clusters.append("".join(current))
+            current.clear()
+
+    for ch in text:
+        role = _classify_codepoint(ord(ch))
+        if role == Role.ZWJ:
+            current.append(ch)
+        elif role in (
+            Role.VARIATION_SELECTOR,
+            Role.SKIN_TONE,
+            Role.TAG,
+            Role.TAG_TERMINATOR,
+            Role.KEYCAP_COMBINER,
+        ):
+            current.append(ch)
+        elif role == Role.REGIONAL_INDICATOR:
+            if len(current) == 1 and _classify_codepoint(ord(current[0])) == Role.REGIONAL_INDICATOR:
+                current.append(ch)
+                flush()
+            else:
+                flush()
+                current.append(ch)
+        else:  # BASE
+            if current and current[-1] == ZERO_WIDTH_JOINER:
+                current.append(ch)
+            else:
+                flush()
+                current.append(ch)
+    flush()
+    return clusters
+
+
+def analyze_all(text: str) -> list[SequenceAnalysis]:
+    """Split `text` into clusters with `split_clusters` and analyze each one."""
+    return [analyze(cluster) for cluster in split_clusters(text)]
+
+
 def format_report(analysis: SequenceAnalysis, as_json: bool = False) -> str:
     """Render an analysis as either a JSON document or an aligned text table.
 

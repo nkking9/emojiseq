@@ -59,6 +59,23 @@ for cp in family.codepoints:
     print(cp.codepoint, cp.role, cp.name)
 ```
 
+### Strings with more than one emoji
+
+`analyze` treats its whole input as a single sequence, so a string with
+several emoji back to back (a sentence, a reaction bar, pasted chat text)
+needs to be split into individual clusters first. `split_clusters` does
+that, and `analyze_all` combines the split with `analyze` in one call:
+
+```python
+from emojiseq import analyze_all
+
+for result in analyze_all("🍕🇨🇦👍🏽"):
+    print(result.text, result.kind)
+# 🍕 single_codepoint
+# 🇨🇦 flag_sequence
+# 👍🏽 modified_emoji
+```
+
 ## What it recognizes
 
 - **single_codepoint** — one base character, e.g. a plain pizza emoji.
@@ -75,10 +92,13 @@ for cp in family.codepoints:
 
 ## Status
 
-Early skeleton. Classification covers the sequence shapes above but the
-result doesn't yet distinguish which base characters are actually valid
-against the Unicode emoji data files, and there's no grapheme-cluster
-splitting for strings containing multiple emoji back to back.
+Early skeleton. Classification covers the sequence shapes above and
+`split_clusters`/`analyze_all` handle strings containing multiple emoji
+back to back, but the result still doesn't distinguish which base
+characters are actually valid against the Unicode emoji data files —
+`analyze("a")` and `analyze("🍕")` both come back as `single_codepoint`,
+because the classifier only looks at sequence shape, not at whether the
+base codepoint is a real emoji.
 
 ## License
 

@@ -3,7 +3,9 @@ from .sequence import (
     Role,
     SequenceAnalysis,
     analyze,
+    analyze_all,
     format_report,
+    split_clusters,
 )
 
 __all__ = [
@@ -11,5 +13,7 @@ __all__ = [
     "Role",
     "SequenceAnalysis",
     "analyze",
+    "analyze_all",
     "format_report",
+    "split_clusters",
 ]

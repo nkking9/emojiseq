@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from emojiseq import Role, analyze, format_report
+from emojiseq import Role, analyze, analyze_all, format_report, split_clusters
 
 
 class AnalyzeTests(unittest.TestCase):
@@ -35,6 +35,46 @@ class AnalyzeTests(unittest.TestCase):
         result = analyze("")
         self.assertEqual(result.kind, "empty")
         self.assertEqual(result.codepoints, ())
+
+
+class SplitClustersTests(unittest.TestCase):
+    def test_empty_string(self):
+        self.assertEqual(split_clusters(""), [])
+
+    def test_single_emoji_is_one_cluster(self):
+        self.assertEqual(split_clusters("🍕"), ["🍕"])
+
+    def test_two_plain_emoji_back_to_back(self):
+        self.assertEqual(split_clusters("🍕🍔"), ["🍕", "🍔"])
+
+    def test_flag_stays_together_and_two_flags_split(self):
+        self.assertEqual(split_clusters("🇨🇦🇺🇸"), ["🇨🇦", "🇺🇸"])
+
+    def test_skin_tone_modifier_attaches_to_preceding_base(self):
+        thumbs_up_toned = "\U0001F44D\U0001F3FD"
+        self.assertEqual(split_clusters("🍕" + thumbs_up_toned), ["🍕", thumbs_up_toned])
+
+    def test_zwj_sequence_is_one_cluster(self):
+        family = "\U0001F468‍\U0001F469‍\U0001F467‍\U0001F466"
+        self.assertEqual(split_clusters(family + "🍕"), [family, "🍕"])
+
+    def test_keycap_sequence_is_one_cluster(self):
+        self.assertEqual(split_clusters("3️⃣🍕"), ["3️⃣", "🍕"])
+
+    def test_lone_trailing_regional_indicator_is_its_own_cluster(self):
+        lone = "\U0001F1E8"
+        self.assertEqual(split_clusters(lone + "🍕"), [lone, "🍕"])
+
+
+class AnalyzeAllTests(unittest.TestCase):
+    def test_analyzes_each_cluster_independently(self):
+        results = analyze_all("🍕🇨🇦")
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0].kind, "single_codepoint")
+        self.assertEqual(results[1].kind, "flag_sequence")
+
+    def test_empty_string_yields_no_analyses(self):
+        self.assertEqual(analyze_all(""), [])
 
 
 class FormatReportTests(unittest.TestCase):
