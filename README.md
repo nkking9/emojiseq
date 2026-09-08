@@ -37,8 +37,8 @@ print(format_report(result, as_json=True))
 #   "kind": "flag_sequence",
 #   "codepoint_count": 2,
 #   "codepoints": [
-#     {"char": "🇨", "codepoint": "U+1F1E8", "name": "REGIONAL INDICATOR SYMBOL LETTER C", "role": "regional_indicator"},
-#     {"char": "🇦", "codepoint": "U+1F1E6", "name": "REGIONAL INDICATOR SYMBOL LETTER A", "role": "regional_indicator"}
+#     {"char": "🇨", "codepoint": "U+1F1E8", "name": "REGIONAL INDICATOR SYMBOL LETTER C", "role": "regional_indicator", "is_known_base": false},
+#     {"char": "🇦", "codepoint": "U+1F1E6", "name": "REGIONAL INDICATOR SYMBOL LETTER A", "role": "regional_indicator", "is_known_base": false}
 #   ]
 # }
 ```
@@ -87,18 +87,32 @@ for result in analyze_all("🍕🇨🇦👍🏽"):
 - **keycap_sequence** — a digit or `#`/`*` followed by the keycap combiner.
 - **modified_emoji** — a base emoji followed by a Fitzpatrick skin tone
   modifier.
+- **not_emoji** — a single codepoint that isn't in a recognized emoji
+  block, e.g. an ordinary letter.
 - **multi_codepoint** — more than one codepoint that doesn't match any of
   the above (rare in well-formed emoji text, useful for catching mistakes).
 
+Every `CodepointInfo` also carries `is_known_base`, which is `True` when
+the codepoint falls in a block of Unicode known to contain emoji. This is
+what separates `not_emoji` from `single_codepoint`:
+
+```python
+from emojiseq import analyze
+
+analyze("a").kind     # "not_emoji"
+analyze("🍕").kind    # "single_codepoint"
+```
+
 ## Status
 
-Early skeleton. Classification covers the sequence shapes above and
-`split_clusters`/`analyze_all` handle strings containing multiple emoji
-back to back, but the result still doesn't distinguish which base
-characters are actually valid against the Unicode emoji data files —
-`analyze("a")` and `analyze("🍕")` both come back as `single_codepoint`,
-because the classifier only looks at sequence shape, not at whether the
-base codepoint is a real emoji.
+Classification covers the sequence shapes above, `split_clusters`/
+`analyze_all` handle strings containing multiple emoji back to back, and
+`is_known_emoji_base` distinguishes real emoji base characters from
+ordinary text using a curated set of Unicode emoji block ranges. Those
+ranges are hand-built from the block layout, not parsed from Unicode's
+own `emoji-data.txt`/`emoji-sequences.txt`, so they'll miss a handful of
+codepoints that are individually listed outside the main blocks. Loading
+the official data files for exact fidelity is the next step.
 
 ## License
 

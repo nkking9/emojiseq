@@ -1,7 +1,14 @@
 import json
 import unittest
 
-from emojiseq import Role, analyze, analyze_all, format_report, split_clusters
+from emojiseq import (
+    Role,
+    analyze,
+    analyze_all,
+    format_report,
+    is_known_emoji_base,
+    split_clusters,
+)
 
 
 class AnalyzeTests(unittest.TestCase):
@@ -10,6 +17,13 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(result.kind, "single_codepoint")
         self.assertEqual(len(result.codepoints), 1)
         self.assertEqual(result.codepoints[0].role, Role.BASE)
+        self.assertTrue(result.codepoints[0].is_known_base)
+
+    def test_plain_letter_is_not_emoji(self):
+        result = analyze("a")
+        self.assertEqual(result.kind, "not_emoji")
+        self.assertEqual(len(result.codepoints), 1)
+        self.assertFalse(result.codepoints[0].is_known_base)
 
     def test_flag_sequence_is_two_regional_indicators(self):
         result = analyze("🇨🇦")
@@ -35,6 +49,22 @@ class AnalyzeTests(unittest.TestCase):
         result = analyze("")
         self.assertEqual(result.kind, "empty")
         self.assertEqual(result.codepoints, ())
+
+
+class IsKnownEmojiBaseTests(unittest.TestCase):
+    def test_recognizes_common_emoji_blocks(self):
+        self.assertTrue(is_known_emoji_base(ord("🍕")))
+        self.assertTrue(is_known_emoji_base(ord("👍")))
+        self.assertTrue(is_known_emoji_base(ord("⚡")))
+
+    def test_rejects_ordinary_text(self):
+        self.assertFalse(is_known_emoji_base(ord("a")))
+        self.assertFalse(is_known_emoji_base(ord("Z")))
+        self.assertFalse(is_known_emoji_base(ord(" ")))
+
+    def test_keycap_bases_are_known(self):
+        for ch in "0123456789#*":
+            self.assertTrue(is_known_emoji_base(ord(ch)), ch)
 
 
 class SplitClustersTests(unittest.TestCase):
@@ -84,6 +114,7 @@ class FormatReportTests(unittest.TestCase):
         self.assertEqual(payload["kind"], "single_codepoint")
         self.assertEqual(payload["codepoint_count"], 1)
         self.assertEqual(payload["codepoints"][0]["codepoint"], "U+1F355")
+        self.assertTrue(payload["codepoints"][0]["is_known_base"])
 
     def test_text_output_has_one_line_per_codepoint_plus_header(self):
         result = analyze("🇨🇦")

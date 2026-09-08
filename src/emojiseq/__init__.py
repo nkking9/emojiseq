@@ -5,6 +5,7 @@ from .sequence import (
     analyze,
     analyze_all,
     format_report,
+    is_known_emoji_base,
     split_clusters,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "analyze",
     "analyze_all",
     "format_report",
+    "is_known_emoji_base",
     "split_clusters",
 ]

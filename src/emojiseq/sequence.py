@@ -40,6 +40,65 @@ _REGIONAL_INDICATOR_RANGE = range(0x1F1E6, 0x1F200)
 # TAG characters used to spell subdivision flags, e.g. england/scotland/wales.
 _TAG_RANGE = range(0xE0020, 0xE0080)
 
+# Base codepoints that can legitimately start or stand alone as an emoji,
+# as opposed to a ZWJ/keycap/tag/skin-tone modifier that only ever attaches
+# to one. This is a curated approximation of the ranges Unicode's own
+# emoji-data.txt marks with the Emoji property, built by hand from the
+# block layout rather than by parsing the actual file. It covers the
+# blocks almost everything in day-to-day use comes from; it will miss a
+# handful of individually-listed codepoints outside those blocks. Loading
+# emoji-data.txt itself for exact fidelity is still on the list.
+_EMOJI_BASE_RANGES: tuple[range, ...] = (
+    range(0x0023, 0x0024),  # keycap base: #
+    range(0x002A, 0x002B),  # keycap base: *
+    range(0x0030, 0x003A),  # keycap base: 0-9
+    range(0x00A9, 0x00AA),  # copyright
+    range(0x00AE, 0x00AF),  # registered
+    range(0x203C, 0x203D),  # double exclamation mark
+    range(0x2049, 0x204A),  # exclamation question mark
+    range(0x2122, 0x2123),  # trade mark
+    range(0x2139, 0x213A),  # information
+    range(0x2194, 0x21AB),  # arrows
+    range(0x231A, 0x231C),  # watch, hourglass
+    range(0x2328, 0x2329),  # keyboard
+    range(0x23CF, 0x23D0),  # eject
+    range(0x23E9, 0x23FB),  # media control symbols
+    range(0x24C2, 0x24C3),  # circled M
+    range(0x25AA, 0x25AC),  # small squares
+    range(0x25B6, 0x25B7),  # play button
+    range(0x25C0, 0x25C1),  # reverse button
+    range(0x25FB, 0x2600),  # geometric shapes
+    range(0x2600, 0x27C0),  # misc symbols + dingbats
+    range(0x2934, 0x2936),  # arrow curving
+    range(0x2B05, 0x2B08),  # arrows
+    range(0x2B1B, 0x2B1D),  # squares
+    range(0x2B50, 0x2B51),  # star
+    range(0x2B55, 0x2B56),  # heavy circle
+    range(0x3030, 0x3031),  # wavy dash
+    range(0x303D, 0x303E),  # part alternation mark
+    range(0x3297, 0x3298),  # japanese "congratulations" button
+    range(0x3299, 0x329A),  # japanese "secret" button
+    range(0x1F000, 0x1F0FF),  # mahjong tiles, playing cards
+    range(0x1F200, 0x1F2FF),  # enclosed ideographic supplement
+    range(0x1F300, 0x1F5FF),  # misc symbols and pictographs
+    range(0x1F600, 0x1F64F),  # emoticons
+    range(0x1F680, 0x1F6FF),  # transport and map symbols
+    range(0x1F900, 0x1F9FF),  # supplemental symbols and pictographs
+    range(0x1FA00, 0x1FAFF),  # symbols and pictographs extended-A
+)
+
+
+def is_known_emoji_base(cp: int) -> bool:
+    """Return whether `cp` falls in a block known to contain base emoji.
+
+    Structural codepoints (ZWJ, variation selectors, skin tones, regional
+    indicators, keycap combiner, tags) are handled by `_classify_codepoint`
+    and are not what this checks; this is specifically for the "can this
+    stand on its own as an emoji" question, used to tell "🍕" apart from
+    plain text like "a" that happens to be a single codepoint.
+    """
+    return any(cp in r for r in _EMOJI_BASE_RANGES)
+
 
 @dataclass(frozen=True)
 class CodepointInfo:
@@ -47,6 +106,7 @@ class CodepointInfo:
     codepoint: int
     name: str
     role: Role
+    is_known_base: bool
 
     def to_dict(self) -> dict:
         return {
@@ -54,6 +114,7 @@ class CodepointInfo:
             "codepoint": f"U+{self.codepoint:04X}",
             "name": self.name,
             "role": self.role.value,
+            "is_known_base": self.is_known_base,
         }
 
 
@@ -113,7 +174,7 @@ def _classify_sequence(codepoints: list[CodepointInfo]) -> str:
     if Role.SKIN_TONE in roles:
         return "modified_emoji"
     if len(codepoints) == 1:
-        return "single_codepoint"
+        return "single_codepoint" if codepoints[0].is_known_base else "not_emoji"
     return "multi_codepoint"
 
 
@@ -125,6 +186,7 @@ def analyze(text: str) -> SequenceAnalysis:
             codepoint=ord(ch),
             name=_name_for(ch),
             role=_classify_codepoint(ord(ch)),
+            is_known_base=is_known_emoji_base(ord(ch)),
         )
         for ch in text
     ]
@@ -200,5 +262,6 @@ def format_report(analysis: SequenceAnalysis, as_json: bool = False) -> str:
     header = f"{analysis.text!r}  ({analysis.kind}, {len(analysis.codepoints)} codepoint(s))"
     lines = [header]
     for cp in analysis.codepoints:
-        lines.append(f"  U+{cp.codepoint:04X}  {cp.role.value:<20} {cp.name}")
+        flag = "" if cp.is_known_base or cp.role != Role.BASE else "  (not a known emoji base)"
+        lines.append(f"  U+{cp.codepoint:04X}  {cp.role.value:<20} {cp.name}{flag}")
     return "\n".join(lines)
