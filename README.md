@@ -76,6 +76,25 @@ for result in analyze_all("🍕🇨🇦👍🏽"):
 # 👍🏽 modified_emoji
 ```
 
+### Naming ZWJ sequences
+
+`zwj_sequence` covers a lot of ground — families, couples, kisses, and
+profession emoji are all "components joined by U+200D". `describe` narrows
+that down for the common person-based patterns:
+
+```python
+from emojiseq import analyze, describe
+
+describe(analyze("\U0001F468‍\U0001F469‍\U0001F467‍\U0001F466"))  # "family"
+describe(analyze("\U0001F469‍❤️‍\U0001F468"))                # "couple"
+describe(analyze("\U0001F469‍\U0001F52C"))                                  # "profession"
+describe(analyze("🍕"))                                                          # None, not a ZWJ sequence
+```
+
+It returns `None` for ZWJ sequences that don't fit one of those shapes, such
+as the rainbow and transgender pride flags, which are ZWJ sequences with no
+person component at all.
+
 ## What it recognizes
 
 - **single_codepoint** — one base character, e.g. a plain pizza emoji.
@@ -106,13 +125,16 @@ analyze("🍕").kind    # "single_codepoint"
 ## Status
 
 Classification covers the sequence shapes above, `split_clusters`/
-`analyze_all` handle strings containing multiple emoji back to back, and
+`analyze_all` handle strings containing multiple emoji back to back,
+`describe` names the common person-based ZWJ shapes, and
 `is_known_emoji_base` distinguishes real emoji base characters from
 ordinary text using a curated set of Unicode emoji block ranges. Those
 ranges are hand-built from the block layout, not parsed from Unicode's
 own `emoji-data.txt`/`emoji-sequences.txt`, so they'll miss a handful of
 codepoints that are individually listed outside the main blocks. Loading
-the official data files for exact fidelity is the next step.
+the official data files for exact fidelity is still on the list, once
+there's a good way to vendor them without adding a network dependency to
+the build.
 
 ## License
 

@@ -40,6 +40,20 @@ _REGIONAL_INDICATOR_RANGE = range(0x1F1E6, 0x1F200)
 # TAG characters used to spell subdivision flags, e.g. england/scotland/wales.
 _TAG_RANGE = range(0xE0020, 0xE0080)
 
+# Person codepoints that appear as ZWJ sequence components in family and
+# couple sequences (not the modifier-bearing "person with X hair" variants,
+# just the base human figures).
+_PERSON_CODEPOINTS = frozenset({
+    0x1F466,  # BOY
+    0x1F467,  # GIRL
+    0x1F468,  # MAN
+    0x1F469,  # WOMAN
+    0x1F9D1,  # ADULT
+    0x1F9D2,  # CHILD
+})
+_HEAVY_BLACK_HEART = 0x2764
+_KISS_MARK = 0x1F48B
+
 # Base codepoints that can legitimately start or stand alone as an emoji,
 # as opposed to a ZWJ/keycap/tag/skin-tone modifier that only ever attaches
 # to one. This is a curated approximation of the ranges Unicode's own
@@ -195,6 +209,33 @@ def analyze(text: str) -> SequenceAnalysis:
         codepoints=tuple(codepoints),
         kind=_classify_sequence(codepoints),
     )
+
+
+def describe(analysis: SequenceAnalysis) -> str | None:
+    """Name the specific ZWJ sequence shape, e.g. "family", "couple", "profession".
+
+    `analysis.kind` already says "zwj_sequence", but that covers dozens of
+    visually and semantically different combinations. This narrows it down
+    for the common cases built from person figures: two or more people
+    joined directly is a family, two joined through a heart is a couple,
+    a couple sequence that also carries a kiss mark is a kiss, and one
+    person joined to a single non-person object (a microscope, a wrench,
+    a laptop) is a profession. Returns None for non-ZWJ input and for ZWJ
+    sequences that don't match one of those patterns, e.g. flag-adjacent
+    ZWJ sequences with no person component at all.
+    """
+    if analysis.kind != "zwj_sequence":
+        return None
+    bases = [c.codepoint for c in analysis.codepoints if c.role == Role.BASE]
+    if _KISS_MARK in bases:
+        return "kiss"
+    if _HEAVY_BLACK_HEART in bases:
+        return "couple"
+    if len(bases) >= 2 and all(cp in _PERSON_CODEPOINTS for cp in bases):
+        return "family"
+    if len(bases) == 2 and sum(cp in _PERSON_CODEPOINTS for cp in bases) == 1:
+        return "profession"
+    return None
 
 
 def split_clusters(text: str) -> list[str]:

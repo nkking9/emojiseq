@@ -5,6 +5,7 @@ from emojiseq import (
     Role,
     analyze,
     analyze_all,
+    describe,
     format_report,
     is_known_emoji_base,
     split_clusters,
@@ -49,6 +50,36 @@ class AnalyzeTests(unittest.TestCase):
         result = analyze("")
         self.assertEqual(result.kind, "empty")
         self.assertEqual(result.codepoints, ())
+
+
+class DescribeTests(unittest.TestCase):
+    def test_family_is_two_or_more_people_joined_directly(self):
+        family = "\U0001F468‍\U0001F469‍\U0001F467‍\U0001F466"
+        self.assertEqual(describe(analyze(family)), "family")
+
+    def test_two_person_family_is_still_a_family(self):
+        man_and_boy = "\U0001F468‍\U0001F466"
+        self.assertEqual(describe(analyze(man_and_boy)), "family")
+
+    def test_couple_with_heart(self):
+        couple = "\U0001F469‍❤️‍\U0001F468"
+        self.assertEqual(describe(analyze(couple)), "couple")
+
+    def test_kiss_takes_priority_over_couple(self):
+        kiss = "\U0001F468‍❤️‍\U0001F48B‍\U0001F468"
+        self.assertEqual(describe(analyze(kiss)), "kiss")
+
+    def test_profession_is_one_person_and_one_object(self):
+        scientist = "\U0001F469‍\U0001F52C"
+        self.assertEqual(describe(analyze(scientist)), "profession")
+
+    def test_non_zwj_sequence_returns_none(self):
+        self.assertIsNone(describe(analyze("🍕")))
+
+    def test_unrecognized_zwj_shape_returns_none(self):
+        # rainbow flag: waving white flag + ZWJ + rainbow, no person component
+        rainbow_flag = "\U0001F3F3️‍\U0001F308"
+        self.assertIsNone(describe(analyze(rainbow_flag)))
 
 
 class IsKnownEmojiBaseTests(unittest.TestCase):
