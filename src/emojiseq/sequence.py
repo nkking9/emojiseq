@@ -291,6 +291,37 @@ def analyze_all(text: str) -> list[SequenceAnalysis]:
     return [analyze(cluster) for cluster in split_clusters(text)]
 
 
+def flag_sequence(region_code: str) -> str:
+    """Build a regional-indicator flag sequence from a 2-letter region code.
+
+    `flag_sequence("CA")` returns the same two codepoints as pasting the
+    Canadian flag emoji: each ASCII letter is shifted into the regional
+    indicator symbol block (U+1F1E6 = REGIONAL INDICATOR SYMBOL LETTER A).
+    Raises ValueError if `region_code` isn't exactly two ASCII letters.
+    """
+    if len(region_code) != 2 or not region_code.isascii() or not region_code.isalpha():
+        raise ValueError(f"flag_sequence requires a 2-letter ASCII code, got {region_code!r}")
+    return "".join(chr(0x1F1E6 + (ord(c.upper()) - ord("A"))) for c in region_code)
+
+
+def tag_sequence(text: str, base: str = "\U0001F3F4") -> str:
+    """Build a tag sequence spelling `text`, e.g. subdivision flags.
+
+    Subdivision flags like England/Scotland/Wales have no dedicated
+    codepoint; they're spelled out with TAG characters that echo an ISO
+    3166-2 code (e.g. "gbeng") after a black flag base, terminated by
+    U+E007F. Each character of `text` must be printable ASCII in the
+    range the tag block covers (U+0020-U+007E), since that's what maps
+    onto TAG characters U+E0020-U+E007E.
+    """
+    if not text:
+        raise ValueError("tag_sequence requires non-empty text")
+    if not all(0x20 <= ord(c) <= 0x7E for c in text):
+        raise ValueError(f"tag_sequence text must be printable ASCII, got {text!r}")
+    tags = "".join(chr(0xE0000 + ord(c)) for c in text)
+    return base + tags + TAG_TERMINATOR
+
+
 def format_report(analysis: SequenceAnalysis, as_json: bool = False) -> str:
     """Render an analysis as either a JSON document or an aligned text table.
 

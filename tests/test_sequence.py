@@ -6,9 +6,11 @@ from emojiseq import (
     analyze,
     analyze_all,
     describe,
+    flag_sequence,
     format_report,
     is_known_emoji_base,
     split_clusters,
+    tag_sequence,
 )
 
 
@@ -151,6 +153,49 @@ class FormatReportTests(unittest.TestCase):
         result = analyze("🇨🇦")
         text = format_report(result, as_json=False)
         self.assertEqual(len(text.splitlines()), 3)
+
+
+class FlagSequenceTests(unittest.TestCase):
+    def test_builds_canada_flag(self):
+        self.assertEqual(flag_sequence("CA"), "🇨🇦")
+
+    def test_lowercase_input_is_normalized(self):
+        self.assertEqual(flag_sequence("ca"), flag_sequence("CA"))
+
+    def test_round_trips_through_analyze(self):
+        result = analyze(flag_sequence("US"))
+        self.assertEqual(result.kind, "flag_sequence")
+        self.assertEqual(len(result.codepoints), 2)
+
+    def test_rejects_wrong_length(self):
+        with self.assertRaises(ValueError):
+            flag_sequence("USA")
+
+    def test_rejects_non_alpha(self):
+        with self.assertRaises(ValueError):
+            flag_sequence("U1")
+
+
+class TagSequenceTests(unittest.TestCase):
+    def test_builds_england_flag(self):
+        england = "\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F"
+        self.assertEqual(tag_sequence("gbeng"), england)
+
+    def test_round_trips_through_analyze(self):
+        result = analyze(tag_sequence("gbsct"))
+        self.assertEqual(result.kind, "tag_sequence")
+
+    def test_round_trips_through_split_clusters(self):
+        sequence = tag_sequence("gbwls")
+        self.assertEqual(split_clusters(sequence + "🍕"), [sequence, "🍕"])
+
+    def test_rejects_empty_text(self):
+        with self.assertRaises(ValueError):
+            tag_sequence("")
+
+    def test_rejects_non_ascii_text(self):
+        with self.assertRaises(ValueError):
+            tag_sequence("gbéng")
 
 
 if __name__ == "__main__":

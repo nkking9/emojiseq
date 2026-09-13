@@ -95,6 +95,28 @@ It returns `None` for ZWJ sequences that don't fit one of those shapes, such
 as the rainbow and transgender pride flags, which are ZWJ sequences with no
 person component at all.
 
+### Building sequences from text
+
+`flag_sequence` and `tag_sequence` go the other direction: given plain text,
+they build the codepoint sequence an emoji font would render, so you can
+round-trip through `analyze`/`split_clusters` without typing raw escapes.
+
+```python
+from emojiseq import analyze, flag_sequence, tag_sequence
+
+flag_sequence("CA")          # "🇨🇦"
+flag_sequence("ca")          # same, case-insensitive
+
+england = tag_sequence("gbeng")  # England subdivision flag
+analyze(england).kind            # "tag_sequence"
+```
+
+`flag_sequence` takes a 2-letter ISO 3166-1 alpha-2 code. `tag_sequence`
+takes the ISO 3166-2-style code used by the England/Scotland/Wales flags
+("gbeng", "gbsct", "gbwls") and wraps it in the black flag base and tag
+terminator itself; both raise `ValueError` on malformed input rather than
+building a sequence that doesn't decode back to what you meant.
+
 ## What it recognizes
 
 - **single_codepoint** — one base character, e.g. a plain pizza emoji.
@@ -126,7 +148,8 @@ analyze("🍕").kind    # "single_codepoint"
 
 Classification covers the sequence shapes above, `split_clusters`/
 `analyze_all` handle strings containing multiple emoji back to back,
-`describe` names the common person-based ZWJ shapes, and
+`describe` names the common person-based ZWJ shapes, `flag_sequence`/
+`tag_sequence` build flag and tag sequences from plain text, and
 `is_known_emoji_base` distinguishes real emoji base characters from
 ordinary text using a curated set of Unicode emoji block ranges. Those
 ranges are hand-built from the block layout, not parsed from Unicode's

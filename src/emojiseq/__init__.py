@@ -5,9 +5,11 @@ from .sequence import (
     analyze,
     analyze_all,
     describe,
+    flag_sequence,
     format_report,
     is_known_emoji_base,
     split_clusters,
+    tag_sequence,
 )
 
 __all__ = [
@@ -17,7 +19,9 @@ __all__ = [
     "analyze",
     "analyze_all",
     "describe",
+    "flag_sequence",
     "format_report",
     "is_known_emoji_base",
     "split_clusters",
+    "tag_sequence",
 ]
