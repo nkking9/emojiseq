@@ -53,6 +53,18 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(result.kind, "empty")
         self.assertEqual(result.codepoints, ())
 
+    def test_variation_sequence(self):
+        # warning sign, text-presentation by default, needs VS16 to be an emoji
+        result = analyze("⚠️")
+        self.assertEqual(result.kind, "variation_sequence")
+        self.assertEqual(len(result.codepoints), 2)
+        self.assertEqual(result.codepoints[1].role, Role.VARIATION_SELECTOR)
+
+    def test_keycap_with_variation_selector_is_still_keycap(self):
+        # keycap sequences carry a VS16 too, but the combiner takes priority
+        result = analyze("3️⃣")
+        self.assertEqual(result.kind, "keycap_sequence")
+
 
 class DescribeTests(unittest.TestCase):
     def test_family_is_two_or_more_people_joined_directly(self):

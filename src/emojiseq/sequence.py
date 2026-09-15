@@ -187,6 +187,8 @@ def _classify_sequence(codepoints: list[CodepointInfo]) -> str:
         return "keycap_sequence"
     if Role.SKIN_TONE in roles:
         return "modified_emoji"
+    if roles == [Role.BASE, Role.VARIATION_SELECTOR]:
+        return "variation_sequence"
     if len(codepoints) == 1:
         return "single_codepoint" if codepoints[0].is_known_base else "not_emoji"
     return "multi_codepoint"

@@ -128,6 +128,9 @@ building a sequence that doesn't decode back to what you meant.
 - **keycap_sequence** — a digit or `#`/`*` followed by the keycap combiner.
 - **modified_emoji** — a base emoji followed by a Fitzpatrick skin tone
   modifier.
+- **variation_sequence** — a base character followed by VARIATION
+  SELECTOR-16, used to force emoji presentation on characters (mostly
+  dingbats and symbols like `☎` or `⚠`) that default to text presentation.
 - **not_emoji** — a single codepoint that isn't in a recognized emoji
   block, e.g. an ordinary letter.
 - **multi_codepoint** — more than one codepoint that doesn't match any of
