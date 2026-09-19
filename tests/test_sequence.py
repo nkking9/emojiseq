@@ -65,6 +65,20 @@ class AnalyzeTests(unittest.TestCase):
         result = analyze("3️⃣")
         self.assertEqual(result.kind, "keycap_sequence")
 
+    def test_unjoined_letters_are_multi_codepoint(self):
+        result = analyze("ab")
+        self.assertEqual(result.kind, "multi_codepoint")
+        self.assertEqual(len(result.codepoints), 2)
+
+    def test_two_bare_emoji_with_no_joiner_are_multi_codepoint(self):
+        # analyze() takes its whole input as one sequence; back-to-back
+        # emoji with no ZWJ between them don't match any recognized shape
+        # even though each codepoint is individually a known emoji base.
+        # This is exactly why split_clusters/analyze_all exist.
+        result = analyze("🍕🍔")
+        self.assertEqual(result.kind, "multi_codepoint")
+        self.assertTrue(all(c.is_known_base for c in result.codepoints))
+
 
 class DescribeTests(unittest.TestCase):
     def test_family_is_two_or_more_people_joined_directly(self):
