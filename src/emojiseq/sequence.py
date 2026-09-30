@@ -93,10 +93,16 @@ _EMOJI_BASE_RANGES: tuple[range, ...] = (
     range(0x3297, 0x3298),  # japanese "congratulations" button
     range(0x3299, 0x329A),  # japanese "secret" button
     range(0x1F000, 0x1F0FF),  # mahjong tiles, playing cards
+    range(0x1F170, 0x1F172),  # negative squared A and B blood-type buttons
+    range(0x1F17E, 0x1F180),  # negative squared O, P
+    range(0x1F18E, 0x1F18F),  # negative squared AB
+    range(0x1F191, 0x1F19B),  # squared CL..VS
     range(0x1F200, 0x1F2FF),  # enclosed ideographic supplement
     range(0x1F300, 0x1F5FF),  # misc symbols and pictographs
     range(0x1F600, 0x1F64F),  # emoticons
     range(0x1F680, 0x1F6FF),  # transport and map symbols
+    range(0x1F7E0, 0x1F7EC),  # colored circles and squares
+    range(0x1F7F0, 0x1F7F1),  # heavy equals sign
     range(0x1F900, 0x1F9FF),  # supplemental symbols and pictographs
     range(0x1FA00, 0x1FAFF),  # symbols and pictographs extended-A
 )

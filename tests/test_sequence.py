@@ -116,6 +116,17 @@ class IsKnownEmojiBaseTests(unittest.TestCase):
         self.assertTrue(is_known_emoji_base(ord("👍")))
         self.assertTrue(is_known_emoji_base(ord("⚡")))
 
+    def test_recognizes_emoji_outside_the_main_blocks(self):
+        # Blood-type buttons and colored shapes sit in small blocks that the
+        # broad pictograph ranges don't reach.
+        for cp in (0x1F170, 0x1F171, 0x1F17E, 0x1F17F, 0x1F18E, 0x1F191, 0x1F19A,
+                   0x1F7E0, 0x1F7EB, 0x1F7F0):
+            self.assertTrue(is_known_emoji_base(cp), hex(cp))
+
+    def test_neighbors_of_small_ranges_are_rejected(self):
+        for cp in (0x1F172, 0x1F17D, 0x1F18F, 0x1F190, 0x1F19B, 0x1F7EC, 0x1F7F1):
+            self.assertFalse(is_known_emoji_base(cp), hex(cp))
+
     def test_rejects_ordinary_text(self):
         self.assertFalse(is_known_emoji_base(ord("a")))
         self.assertFalse(is_known_emoji_base(ord("Z")))
